@@ -101,7 +101,49 @@ jobs:
 
       - name: Notify Discord
         if: always()
-        uses: darco81/gha-actions/notify-discord@v1
-        with:
-          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          app: cdat-website
+        shell: bash
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          APP: cdat-website
+          STATUS: ${{ job.status }}
+          REF: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${WEBHOOK_URL:-}" ]; then
+            echo "::warning::DISCORD webhook URL empty - skipping notification"
+            exit 0
+          fi
+
+          case "${STATUS,,}" in
+            success)   ICON="✅"; LABEL="OK" ;;
+            failure)   ICON="❌"; LABEL="FAILED" ;;
+            cancelled) ICON="⚠️"; LABEL="CANCELLED" ;;
+            *)         ICON="ℹ️"; LABEL="${STATUS^^}" ;;
+          esac
+
+          COMMIT_MSG=""
+          if [ -d .git ]; then
+            COMMIT_MSG="$(git log -1 --pretty=%s 2>/dev/null || true)"
+          fi
+
+          SHORT_SHA="${SHA:0:7}"
+          BODY="${ICON} **${APP} deploy ${LABEL}** - \`${REF}@${SHORT_SHA}\`"
+          if [ -n "${COMMIT_MSG}" ]; then
+            BODY="${BODY} - ${COMMIT_MSG}"
+          fi
+          if [ "${STATUS,,}" = "failure" ]; then
+            BODY="${BODY} - <${RUN_URL}>"
+          fi
+
+          PAYLOAD=$(jq -n --arg c "${BODY}" '{content: $c}')
+
+          if [ "${STATUS,,}" = "failure" ]; then
+            curl -fsS -X POST -H "Content-Type: application/json" \
+              -d "${PAYLOAD}" "${WEBHOOK_URL}" >/dev/null || true
+          else
+            curl -fsS -X POST -H "Content-Type: application/json" \
+              -d "${PAYLOAD}" "${WEBHOOK_URL}" >/dev/null
+          fi
