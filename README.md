@@ -37,6 +37,25 @@ The pattern itself (raw docs, examples, `@cdat/utils` package) lives in [`cdat-p
 
 Tools exposed: `search_docs`, `get_layer`, `list_zero_rules`, `get_zero_rule`.
 
+## Agent-ready (A2A v1.0)
+
+Two public discovery manifests under `/.well-known/`:
+
+- **`agent-card.json`** - A2A Agent Card, the official v1.0 path (primary).
+  `agent.json` stays as a **byte-identical backward-compat alias** (Google ADK
+  and tooling built against the earlier draft still read it). v1.0 shape:
+  camelCase, `securitySchemes` + `security` (OpenAPI 3) instead of the old
+  `authentication.schemes`, plus `protocolVersion` / `preferredTransport` /
+  `provider`. One builder (`src/lib/agentCard.ts`), two routes.
+- **`mcp.json`** - MCP discovery manifest pointing at `/mcp`. `version` is the
+  MCP protocol revision (`2025-06-18`), not the manifest format version.
+
+**Signed Agent Cards (JWS)** are a v1.0 trust feature (`signatures`, RFC 7515);
+this card is **unsigned by design** until signing infra exists - it does not
+pretend to be signed. **MCP discovery is still converging** (SEP-1649 / SEP-1960
+/ MCP Registry / IETF draft-serra); `mcp.json` is one proposal, a cheap pointer
+to the real `/mcp`, not a settled standard.
+
 ## This site is tested with CDAT
 
 Every test under `tests/e2e/` follows the CDAT 4-file structure (components / data / actions / test). 124+ E2E tests across chromium / firefox / webkit / mobile-chrome - self-referential evidence that the pattern scales. See `tests/e2e/features/` for live examples.
