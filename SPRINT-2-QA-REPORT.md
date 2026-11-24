@@ -1,6 +1,6 @@
 # Sprint 2 - QA + Polish Pass Report
 
-**Generated:** 2026-05-02 by Claude Code
+**Generated:** 2026-05-02
 **Total runtime:** ~30 min (PHASE 1 → PHASE 7 sequential)
 **Status:** 🟢 **GREEN - go for push & deploy**
 
